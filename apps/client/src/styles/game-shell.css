@@ -1,0 +1,444 @@
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.game-frame {
+  position: relative;
+  height: 100dvh;
+  min-height: 640px;
+  padding: 0;
+  overflow: hidden;
+  background: #070b16;
+}
+
+.topbar {
+  position: relative;
+  z-index: 60;
+  height: 70px;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  border-bottom: 1px solid rgba(165, 181, 211, 0.16);
+  background: rgba(9, 15, 29, 0.98);
+  box-shadow: 0 8px 24px rgba(2, 8, 18, 0.16);
+}
+
+.brand-mark {
+  gap: 12px;
+  color: #f5f8ff;
+  font-size: 12px;
+  letter-spacing: 0.13em;
+}
+
+.brand-glyph {
+  width: auto;
+  height: 30px;
+  padding-right: 14px;
+  border-right: 1px solid rgba(206, 218, 240, 0.25);
+  background: transparent;
+  color: #ffffff;
+  clip-path: none;
+  font: 800 22px/30px "Space Grotesk", sans-serif;
+  letter-spacing: -0.05em;
+}
+
+.round-status strong {
+  color: #f7f9ff;
+  font: 700 17px "Space Grotesk", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0.04em;
+}
+
+.topbar-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.room-chip,
+.player-drawer-trigger {
+  height: 40px;
+  border: 1px solid rgba(166, 182, 213, 0.25);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.025);
+  color: #e7edf9;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.03);
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.room-chip {
+  justify-self: auto;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.room-chip:hover,
+.player-drawer-trigger:hover,
+.player-drawer-trigger.is-open {
+  border-color: rgba(91, 226, 255, 0.58);
+  background: rgba(91, 226, 255, 0.075);
+}
+
+.player-drawer-trigger {
+  min-width: 132px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.player-drawer-trigger strong {
+  color: #ffffff;
+  font: 700 12px "Space Grotesk", sans-serif;
+}
+
+.player-drawer-trigger svg:last-child {
+  margin-left: 1px;
+  color: #7e8da7;
+  transition: transform 160ms ease;
+}
+
+.player-drawer-trigger.is-open svg:last-child { transform: rotate(180deg); }
+
+.game-layout {
+  display: block;
+  height: calc(100dvh - 70px);
+  min-height: 0;
+  padding: 0;
+}
+
+.game-content {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.game-frame:not(.game-frame--lobby) .game-layout { padding: 18px 24px 24px; }
+
+.player-drawer-scrim {
+  position: fixed;
+  z-index: 65;
+  inset: 70px 0 0;
+  background: rgba(3, 10, 22, 0.28);
+  backdrop-filter: blur(1.5px);
+  animation: drawer-fade-in 160ms ease both;
+}
+
+.player-drawer {
+  position: fixed;
+  z-index: 70;
+  top: 82px;
+  right: 24px;
+  bottom: 24px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(157, 177, 214, 0.25);
+  border-radius: 14px;
+  background: rgba(10, 18, 34, 0.965);
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.54), inset 0 1px rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(20px);
+  animation: drawer-slide-in 190ms ease both;
+}
+
+.player-drawer-header {
+  flex: 0 0 68px;
+  padding: 0 14px 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+
+.player-drawer-header > div { display: grid; gap: 4px; }
+.player-drawer-header span { color: var(--muted); font: 700 8px "Space Grotesk"; letter-spacing: 0.17em; }
+.player-drawer-header strong { color: #f7f9ff; font-size: 16px; }
+
+.player-drawer-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: #8492aa;
+}
+
+.player-drawer-close:hover { border-color: var(--line); background: rgba(255, 255, 255, 0.04); color: #ffffff; }
+
+.player-drawer-body {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: #34425b transparent;
+}
+
+.player-drawer-list { display: grid; gap: 7px; }
+
+.player-drawer-row {
+  min-height: 58px;
+  padding: 6px 9px;
+  display: grid;
+  grid-template-columns: 24px 42px minmax(0, 1fr) 18px 18px;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.022);
+}
+
+.player-drawer-row--self {
+  border-color: rgba(91, 226, 255, 0.3);
+  background: rgba(91, 226, 255, 0.055);
+}
+
+.player-drawer-row--empty {
+  grid-template-columns: 24px 42px 1fr;
+  border: 1px dashed rgba(151, 169, 202, 0.16);
+  background: transparent;
+  opacity: 0.68;
+}
+
+.player-seat-number { color: #62708a; font: 700 9px "Space Grotesk"; }
+
+.pawn-avatar,
+.empty-seat-avatar {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(113, 232, 255, 0.42);
+  border-radius: 50%;
+  background-color: #13253b;
+}
+
+.pawn-avatar {
+  background-image: var(--pawn-sprite);
+  background-repeat: no-repeat;
+  background-position: -21px center;
+  background-size: 1600% 200%;
+  image-rendering: pixelated;
+  box-shadow: inset 0 -6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.empty-seat-avatar { display: grid; place-items: center; color: #697891; font-size: 18px; }
+
+.player-drawer-name { min-width: 0; display: grid; gap: 4px; }
+.player-drawer-name strong { overflow: hidden; color: #e9effb; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.player-drawer-name span { color: #697892; font: 700 8px "Space Grotesk"; letter-spacing: 0.12em; }
+.player-drawer-row--self .player-drawer-name span { color: var(--cyan); }
+.player-host-icon { color: var(--amber); }
+.player-ready-dot { width: 6px; height: 6px; justify-self: center; border-radius: 50%; background: #3d485d; }
+.player-ready-dot.is-ready { background: var(--green); box-shadow: 0 0 9px rgba(63, 230, 161, 0.75); }
+.player-online-icon { color: #60708a; }
+.player-offline-icon { color: var(--red); }
+
+.player-drawer-round { margin-top: 18px; padding: 18px 4px 2px; border-top: 1px solid var(--line); }
+.player-drawer-round > div:first-child { display: flex; align-items: baseline; justify-content: space-between; }
+.player-drawer-round span { color: var(--muted); font: 700 8px "Space Grotesk"; letter-spacing: 0.16em; }
+.player-drawer-round strong { font: 700 18px "Space Grotesk"; }
+.player-drawer-meter { height: 3px; margin-top: 10px; background: #1c2941; }
+.player-drawer-meter i { display: block; height: 100%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+
+.player-drawer-footer {
+  flex: 0 0 auto;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--line);
+  background: rgba(5, 11, 23, 0.32);
+}
+
+.room-drawer-controls { display: grid; gap: 12px; }
+.room-drawer-capacity { display: grid; grid-template-columns: 38px 1fr 38px; align-items: center; gap: 10px; }
+.room-drawer-capacity button {
+  width: 38px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.035);
+}
+.room-drawer-capacity span { text-align: center; color: #8b99b0; font-size: 11px; }
+.room-drawer-capacity strong { color: #ffffff; font: 700 14px "Space Grotesk"; }
+.room-drawer-start { width: 100%; height: 46px; }
+.room-drawer-waiting { height: 46px; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid var(--line); border-radius: 8px; color: #8997ad; font-size: 12px; }
+
+.lobby-stage {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: block;
+}
+
+.island-lobby {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: #2387c0;
+  box-shadow: none;
+  isolation: isolate;
+}
+
+.island-lobby-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  min-height: 0;
+  background: #2387c0;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.game-frame--scrolling-lobby {
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+html:has(.game-frame--scrolling-lobby),
+body:has(.game-frame--scrolling-lobby),
+body:has(.game-frame--scrolling-lobby) #root {
+  min-width: 0;
+}
+
+.game-frame--scrolling-lobby .topbar {
+  position: sticky;
+  top: 0;
+}
+
+.game-frame--scrolling-lobby .game-layout,
+.game-frame--scrolling-lobby .game-content,
+.game-frame--scrolling-lobby .lobby-stage {
+  height: auto;
+}
+
+.tiled-lobby {
+  height: auto;
+  overflow: visible;
+}
+
+.tiled-lobby-canvas-wrapper {
+  display: block;
+  flex: none;
+  line-height: 0;
+}
+
+.tiled-lobby-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1920 / 2240;
+  cursor: default;
+}
+
+.tiled-lobby-background {
+  background-color: #4bb1b5;
+  background-image: url("/tiny-swords/Tiny Swords (Free Pack)/Terrain/Tileset/Water Background color.png");
+  background-repeat: repeat;
+  background-size: calc(100% / 30) calc(100% / 35);
+}
+
+.tiled-lobby-layer-canvas,
+.tiled-lobby-actor-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.tiled-lobby-water-canvas { z-index: 1; }
+.tiled-lobby-ground-image {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.tiled-lobby-actor-canvas { z-index: 3; }
+
+.tiled-lobby .island-loading {
+  align-content: start;
+  padding-top: min(30vh, 320px);
+  line-height: normal;
+}
+
+.tiled-lobby .island-loading.is-error {
+  background: rgba(74, 20, 34, 0.96);
+  color: #ffd8df;
+}
+
+.game-frame--scrolling-lobby .tiled-lobby-controls {
+  position: fixed;
+  z-index: 55;
+}
+
+.island-controls {
+  position: absolute;
+  z-index: 8;
+  left: 24px;
+  bottom: 22px;
+  min-height: 40px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9px;
+  background: rgba(8, 18, 31, 0.72);
+  color: #dce7ef;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(8px);
+  font-size: 11px;
+}
+
+.island-controls kbd { color: #ffffff; font: 700 11px "Space Grotesk", sans-serif; }
+.island-controls span:last-child { color: #9eb0bd; }
+
+.island-loading {
+  position: absolute;
+  z-index: 9;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  background: #2387c0;
+  color: #ffffff;
+  font: 700 10px "Space Grotesk";
+  letter-spacing: 0.14em;
+}
+
+@keyframes drawer-fade-in { from { opacity: 0; } }
+@keyframes drawer-slide-in { from { opacity: 0; transform: translateY(-8px) scale(0.985); } }
+
+@media (max-height: 720px) {
+  .player-drawer { top: 78px; right: 18px; bottom: 14px; }
+  .player-drawer-row { min-height: 52px; }
+  .player-drawer-body { padding: 10px 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-drawer,
+  .player-drawer-scrim { animation: none; }
+}

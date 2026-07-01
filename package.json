@@ -1,0 +1,28 @@
+{
+  "name": "draw-and-guess",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local multiplayer anime drawing and guessing game",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c magenta,cyan \"npm run dev --workspace apps/server\" \"npm run dev --workspace apps/client\"",
+    "dev:client": "npm run dev --workspace apps/client",
+    "dev:server": "npm run dev --workspace apps/server",
+    "build": "npm run build --workspace apps/client",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "sync:anime": "python scripts/sync-anime-dataset.py",
+    "sync:lobby-map": "python scripts/sync-tiled-map.py",
+    "preview": "npm run preview --workspace apps/client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
