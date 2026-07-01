@@ -26,3 +26,11 @@ artifacts/scratch/
 _deploy*.py
 _deploy*.ps1
 _verify*.py
+start-ip80.cmd
+start-server.ps1
+stop-server.ps1
+README_deploy.md
+deploy.ps1
+deploy.py
+ssh密码.txt
+账号密码.txt

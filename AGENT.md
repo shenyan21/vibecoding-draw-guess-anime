@@ -12,7 +12,8 @@
 - 题库：719 部本地动画，每局随机抽取 200 部候选；选题、刷新和猜测都受候选池约束。
 - 身份：客户端使用 `sessionStorage` 键 `drawandguess.identity.v2`，同标签页刷新可恢复。
 - 房间：仅内存存储；服务端重启或热更新会丢失所有房间。
-- 部署：开发默认后端端口 `3001`；公网脚本使用生产模式 `PORT=80`，同一服务托管前端静态文件和 Socket.IO。
+- 运行：开发默认后端端口 `3001`；生产模式下同一服务托管前端静态文件和 Socket.IO。
+- 公网信息：README 开头仅展示公网入口和开放时段；部署脚本、凭据及部署说明只在本地维护，不纳入 Git。
 - 界面：以桌面端为主，最小可用宽度约 1180px。
 
 ## 核心目录与文件
@@ -49,9 +50,6 @@ apps/client/bot.js                  AI 测试玩家，SERVER_URL 可覆盖服务
 apps/client/vite.config.ts          Vite dev server，代理 /socket.io 到 3001
 scripts/sync-anime-dataset.py       题库同步
 scripts/sync-tiled-map.py           Tiled 地图转换
-start-ip80.cmd                      Windows 前台生产启动
-start-server.ps1                    Windows 后台生产启动，默认 C:\apps\drawandguess
-stop-server.ps1                     停止本机 80 端口监听进程
 ```
 
 ## 常用命令
@@ -85,33 +83,11 @@ npm run sync:lobby-map
 - Vite dev server 绑定 `0.0.0.0:5173`，局域网设备可访问 `http://<开发机IP>:5173`。
 - `npm run preview` 只预览前端静态文件，不自动提供 Socket.IO 后端；完整生产验证要启动 `apps/server` 的生产模式。
 
-## 公网部署
+## 公网信息维护
 
-生产启动前必须先构建前端：
-
-```bash
-npm run build
-```
-
-启动方式：
-
-- `start-ip80.cmd`：从当前项目目录前台启动，设置 `NODE_ENV=production`、`PORT=80`。
-- `start-server.ps1`：后台启动，默认项目目录 `C:\apps\drawandguess`，日志写入 `server.log` 和 `server-error.log`。
-- `stop-server.ps1`：查找并停止本机 80 端口监听进程。
-
-生产行为：
-
-- `NODE_ENV=production` 时，服务端托管 `apps/client/dist`。
-- `/health` 返回健康检查 JSON。
-- `/socket.io` 保留给 Socket.IO。
-- 其它路由回退到 `index.html`，支持前端路由刷新。
-
-注意：
-
-- 部署目录不是 `C:\apps\drawandguess` 时，先改 `start-server.ps1` 的路径变量。
-- 公网机器需要放行 TCP 80 端口。
-- 前端改动后必须重新 `npm run build` 并重启生产服务。
-- 服务重启会清空所有内存房间。
+- README 开头只保留公网访问地址、HTTP 提示和开服时间，不写服务器路径、部署命令或运维步骤。
+- 公网启动/停止脚本、部署说明、凭据文件均为本地私有文件，必须由 `.gitignore` 排除。
+- 不要把服务器 IP 之外的凭据、目录、任务计划名称或远程操作方式提交到 Git。
 
 ## 权威状态与流程
 
@@ -217,7 +193,7 @@ npm run build
 - 绘图工具不遮挡画布，提交后可实时查看他人画板且不泄题。
 - 猜测卡片不因长标题换行抖动。
 - 揭晓动画完整可见，完成后进入投票和结果页。
-- 生产模式下访问 `http://<host>/health` 和前端路由刷新都正常。
+- 生产模式下健康检查和前端路由刷新都正常。
 
 ## 页面截图索引
 
@@ -258,7 +234,7 @@ README 必须引用这 9 张截图，不要改用旧的 `home.png`、`lobby.png`
 
 ## Git 与文档维护
 
-- `.gitignore` 应排除依赖、构建产物、日志、环境文件、tsbuildinfo 和本地诊断目录。
+- `.gitignore` 应排除依赖、构建产物、日志、环境文件、tsbuildinfo、本地诊断目录和公网部署私有文件。
 - 每次重要功能、结构、命令或运行方式变化后，同步更新 `AGENT.md` 和 `README.md`。
 - 临时截图、日志和调试文件只能放入明确的临时目录，验证完成后清理。
 - 未经明确要求不推送远端；提交前先检查 `git status` 和 `git diff`。
