@@ -9,7 +9,7 @@ import type { RoomIdentity } from "./roomStore";
 import { loadCatalog } from "./catalog";
 import { RoomStore } from "./roomStore";
 
-const PORT = Number(process.env.PORT || 80);
+const PORT = Number(process.env.PORT || 3001);
 const isProduction = process.env.NODE_ENV === "production";
 
 const app = express();

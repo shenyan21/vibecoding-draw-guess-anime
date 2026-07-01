@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 const roomCode = process.argv[2] || "9986";
 const defaultName = "AI陪玩小助手_" + Math.floor(Math.random() * 1000);
 const nickname = process.argv[3] || defaultName;
-const serverUrl = "http://localhost:3001";
+const serverUrl = process.env.SERVER_URL || "http://localhost:3001";
 
 console.log(`Connecting to server: ${serverUrl} and joining room: ${roomCode} as ${nickname}...`);
 

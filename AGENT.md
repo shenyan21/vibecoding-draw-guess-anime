@@ -2,17 +2,18 @@
 
 ## 项目定位
 
-“动画版你画我猜”是 2–10 人桌面 Web 派对游戏。每位玩家使用独立浏览器标签页连接同一台 Socket.IO 服务；服务端维护唯一权威房间状态，客户端负责交互、Canvas 绘制、揭晓动画与表现层。
+“动画版你画我猜”是 2-10 人桌面 Web 派对游戏。客户端负责 React 页面、Canvas 绘画、揭晓动画和大厅表现；服务端通过 Express + Socket.IO 维护唯一权威房间状态。
 
 ## 当前状态
 
 - 前端：React 19、TypeScript、Vite、React Router、Zustand、Socket.IO Client。
-- 服务端：Express 5、Socket.IO、TypeScript、tsx watch、Vitest。
+- 服务端：Express 5、Socket.IO、TypeScript、tsx、Vitest。
 - 共享包：`packages/game-core` 存放协议类型、常量和环形调度规则。
-- 题库：719 部本地动画，每局无重复抽取 200 部；选题、刷新和猜测都受本局候选池约束。
-- 身份：`sessionStorage` 键 `drawandguess.identity.v2`，同标签页刷新可恢复。
-- 房间：仅内存存储；服务端重启或 tsx 热更新会立即丢失所有房间。
-- 正式界面以桌面端为主，最小宽度约 1180px。
+- 题库：719 部本地动画，每局随机抽取 200 部候选；选题、刷新和猜测都受候选池约束。
+- 身份：客户端使用 `sessionStorage` 键 `drawandguess.identity.v2`，同标签页刷新可恢复。
+- 房间：仅内存存储；服务端重启或热更新会丢失所有房间。
+- 部署：开发默认后端端口 `3001`；公网脚本使用生产模式 `PORT=80`，同一服务托管前端静态文件和 Socket.IO。
+- 界面：以桌面端为主，最小可用宽度约 1180px。
 
 ## 核心目录与文件
 
@@ -21,11 +22,11 @@ apps/client/src/
 ├─ app/routes.tsx
 ├─ components/
 │  ├─ GameFrame.tsx                 全阶段外壳和玩家入口
-│  ├─ PlayerDrawer.tsx              玩家列表、拖动换位、踢人
+│  ├─ PlayerDrawer.tsx              玩家列表、拖动换位、踢人、时长设置
 │  ├─ RoomPlayerDrawerFooter.tsx    准备/开始操作
 │  ├─ TiledLobbyGame.tsx            大厅地图、移动、攻击、防御与击退
 │  ├─ HomeAnimeWaterfall.tsx        首页 -45° 双向封面瀑布流
-│  ├─ DrawingBoard.tsx              800×600 Canvas 与绘图工具
+│  ├─ DrawingBoard.tsx              800x600 Canvas 与绘图工具
 │  ├─ AnimeCard.tsx
 │  └─ AnimeBrief.tsx
 ├─ pages/
@@ -38,27 +39,91 @@ apps/client/src/
 └─ styles/                          首页、游戏框架与页面样式
 
 apps/server/
-├─ src/server.ts                    HTTP/Socket 入口
+├─ src/server.ts                    HTTP、静态托管和 Socket.IO 入口
 ├─ src/roomStore.ts                 权威状态、任务分配和提交校验
+├─ src/catalog.ts                   题库加载
 └─ test/roomStore.test.ts           2/3/10 人流程及席位顺序测试
 
 packages/game-core/src/index.ts     共享数据结构与 getChainIndexForPlayer
-apps/client/bot.js                  本地 AI 测试玩家
+apps/client/bot.js                  AI 测试玩家，SERVER_URL 可覆盖服务地址
+apps/client/vite.config.ts          Vite dev server，代理 /socket.io 到 3001
 scripts/sync-anime-dataset.py       题库同步
 scripts/sync-tiled-map.py           Tiled 地图转换
+start-ip80.cmd                      Windows 前台生产启动
+start-server.ps1                    Windows 后台生产启动，默认 C:\apps\drawandguess
+stop-server.ps1                     停止本机 80 端口监听进程
 ```
+
+## 常用命令
+
+```bash
+npm install
+npm run dev
+npm run dev:client
+npm run dev:server
+npm run typecheck
+npm test
+npm run build
+npm run preview
+npm run sync:anime
+npm run sync:lobby-map
+```
+
+开发地址：
+
+- 前端：http://localhost:5173
+- 服务端：http://localhost:3001
+- 健康检查：http://localhost:3001/health
+
+当前 Windows 环境没有 `rtk`；确认命令不可用后直接使用原生命令，不要反复尝试。
+
+## 本地开发连接
+
+- `apps/server/src/server.ts` 默认 `PORT=3001`，方便本地开发和 AI 机器人。
+- `apps/client/vite.config.ts` 将开发环境的 `/socket.io` 代理到 `http://localhost:3001`，所以默认不需要 `VITE_SERVER_URL`。
+- 如果前端要连其它机器或公网后端，设置 `VITE_SERVER_URL=http://<host>` 后再启动客户端。
+- Vite dev server 绑定 `0.0.0.0:5173`，局域网设备可访问 `http://<开发机IP>:5173`。
+- `npm run preview` 只预览前端静态文件，不自动提供 Socket.IO 后端；完整生产验证要启动 `apps/server` 的生产模式。
+
+## 公网部署
+
+生产启动前必须先构建前端：
+
+```bash
+npm run build
+```
+
+启动方式：
+
+- `start-ip80.cmd`：从当前项目目录前台启动，设置 `NODE_ENV=production`、`PORT=80`。
+- `start-server.ps1`：后台启动，默认项目目录 `C:\apps\drawandguess`，日志写入 `server.log` 和 `server-error.log`。
+- `stop-server.ps1`：查找并停止本机 80 端口监听进程。
+
+生产行为：
+
+- `NODE_ENV=production` 时，服务端托管 `apps/client/dist`。
+- `/health` 返回健康检查 JSON。
+- `/socket.io` 保留给 Socket.IO。
+- 其它路由回退到 `index.html`，支持前端路由刷新。
+
+注意：
+
+- 部署目录不是 `C:\apps\drawandguess` 时，先改 `start-server.ps1` 的路径变量。
+- 公网机器需要放行 TCP 80 端口。
+- 前端改动后必须重新 `npm run build` 并重启生产服务。
+- 服务重启会清空所有内存房间。
 
 ## 权威状态与流程
 
 实际服务端阶段：
 
 ```text
-LOBBY → TOPIC → DRAW ↔ GUESS → VOTE → RESULTS
-                                 ↑
-                       客户端在 VOTE 内先本地揭晓
+LOBBY -> TOPIC -> DRAW <-> GUESS -> VOTE -> RESULTS
+                                  ↑
+                        客户端在 VOTE 内先本地揭晓
 ```
 
-注意：当前没有独立、持久的服务端 `REVEAL` 计时阶段。前端 `RevealVoteView` 在服务端进入 `VOTE` 后先逐链播放揭晓，再显示投票。不要直接照抄旧文档中的 `REVEAL → VOTE` 服务端状态描述。
+当前没有独立、持久的服务端 `REVEAL` 计时阶段。前端 `RevealVoteView` 在服务端进入 `VOTE` 后先逐链播放揭晓，再显示投票。
 
 服务端按玩家裁剪房间视图：
 
@@ -94,22 +159,22 @@ getChainIndexForPlayer(p, r, N) = (p - r + N) % N
 - `PLAYER_MOVE_SPEED = 2`：WASD 每帧移动 2 像素。
 - `KNOCKBACK_DURATION_MS = 480`：普通击退和防御反弹都逐帧插值。
 - 客户端约每 50ms 上报位置，服务端裁剪到合法活动区并广播。
-- 远端玩家存在活跃 `knockback` 时，`player:moved` 只能更新朝向，不得覆盖本地插值坐标；否则观察端会每 50ms 分段跳变，看起来像瞬移。
+- 远端玩家存在活跃 `knockback` 时，`player:moved` 只能更新朝向，不得覆盖本地插值坐标。
 - 自己的移动广播会被客户端忽略；被击者最终位置仍由服务端权威校正。
 - `J` 攻击，`K` 防御；只在正确朝向防住时反弹攻击者。
 
 ## 前端关键约束
 
-- 首页 `HomeAnimeWaterfall.tsx` 使用多列、约 `-45°` 旋转的双向循环封面轨道；背景不接收指针事件，文字和表单位于其上方。
-- 大厅运行时 Canvas 固定 1920×2240，再按浏览器宽度等比显示；允许纵向页面滚动。
-- 画布固定 800×600，调色工具位于独立左列，不能覆盖画布。
+- 首页 `HomeAnimeWaterfall.tsx` 使用多列、约 `-45°` 旋转的双向循环封面轨道；背景不接收指针事件。
+- 大厅运行时 Canvas 固定 1920x2240，再按浏览器宽度等比显示；允许纵向页面滚动。
+- 画布固定 800x600，调色工具位于独立左列，不能覆盖画布。
 - 绘画提前提交后，`WaitingView` 可订阅其他仍在作画玩家的实时笔画，但必须隐藏目标动画。
 - 猜测只能提交 `animeId`，禁止恢复为自由文本。
-- 揭晓画作按笔画回放。揭晓页不得使用 `game-frame--scrolling-lobby`，该类会使动画 Flex 容器高度归零，导致动画不可见。
+- 揭晓画作按笔画回放。揭晓页不得使用 `game-frame--scrolling-lobby`，该类会使动画 Flex 容器高度归零。
 
 ## Socket 交互重点
 
-客户端发出房间创建/加入、准备、换位、打乱、开始、移动、攻击、防御、任务提交、实时笔画和投票事件；服务端校验身份、房主权限、阶段、候选池及坐标范围后广播裁剪视图。
+客户端发出房间创建/加入、恢复、准备、换位、打乱、开始、移动、攻击、任务提交、实时笔画和投票事件。服务端校验身份、房主权限、阶段、候选池及坐标范围后广播裁剪视图。
 
 协议或状态变化时同时检查：
 
@@ -119,33 +184,20 @@ getChainIndexForPlayer(p, r, N) = (p - r + N) % N
 4. `apps/client/src/store/roomStore.ts` 监听与请求。
 5. 页面组件是否正确处理 `task === null`。
 
-## 常用命令
-
-```bash
-npm install
-npm run dev
-npm run dev:client
-npm run dev:server
-npm run typecheck
-npm test
-npm run build
-npm run preview
-npm run sync:anime
-npm run sync:lobby-map
-```
-
-- 前端：http://localhost:5173
-- 服务端：http://localhost:3001
-- 健康检查：http://localhost:3001/health
-- 当前 Windows 环境没有 `rtk`；确认命令不可用后直接使用原生命令，不要反复尝试。
-
 ## AI 测试
 
 ```bash
 node apps/client/bot.js <房间码> [昵称]
 ```
 
-机器人会加入房间、准备并自动处理题目、绘画、猜测和投票，适合补齐多人测试。机器人启动前必须确保房间已存在且未满；服务端热更新后要重新建房、重新启动机器人。
+默认服务地址是 `http://localhost:3001`。连接其它地址时：
+
+```powershell
+$env:SERVER_URL = 'http://<公网IP或域名>'
+node apps/client/bot.js <房间码> 测试AI-1
+```
+
+机器人会加入房间、准备并自动处理题目、绘画、猜测和投票。启动前必须确保房间已存在且未满；服务端重启后要重新建房、重新启动机器人。
 
 ## 验证要求
 
@@ -157,7 +209,7 @@ npm test
 npm run build
 ```
 
-前端改动必须再做真实浏览器检查。多人相关改动至少使用两个独立标签页或一个真实客户端加测试机器人，重点确认：
+前端改动尽量做真实浏览器检查。多人相关改动至少使用两个独立标签页或一个真实客户端加测试机器人，重点确认：
 
 - 打乱/拖动后的席位顺序在所有客户端一致，并决定下一轮收到谁的结果。
 - WASD 位移速度符合预期；普通击退和反弹在攻击者、被击者及观察端都连续平滑。
@@ -165,6 +217,7 @@ npm run build
 - 绘图工具不遮挡画布，提交后可实时查看他人画板且不泄题。
 - 猜测卡片不因长标题换行抖动。
 - 揭晓动画完整可见，完成后进入投票和结果页。
+- 生产模式下访问 `http://<host>/health` 和前端路由刷新都正常。
 
 ## 页面截图索引
 
@@ -198,6 +251,7 @@ README 必须引用这 9 张截图，不要改用旧的 `home.png`、`lobby.png`
 - 服务端内存房间会在重启和热更新时消失，修改服务端文件前先告知正在测试的用户。
 - Socket.IO `maxHttpBufferSize` 为 3,000,000；单张绘画业务校验约 2.5MB。
 - 首页瀑布流、Canvas 地图和大量封面可能增加低端设备 GPU/内存压力。
+- `npm run preview` 不是完整联机预览；没有后端时 Socket.IO 不可用。
 - 机器人是测试工具，不模拟真实绘画质量和网络抖动。
 - `artifacts/scratch/` 是本地诊断脚本目录，不应纳入 Git。
 - 仓库可能存在用户未提交改动；禁止无授权执行 `git reset --hard`、`git checkout --` 或删除不相关文件。
@@ -205,6 +259,6 @@ README 必须引用这 9 张截图，不要改用旧的 `home.png`、`lobby.png`
 ## Git 与文档维护
 
 - `.gitignore` 应排除依赖、构建产物、日志、环境文件、tsbuildinfo 和本地诊断目录。
-- 不自动提交或推送；除非用户明确要求，只初始化仓库并报告工作区状态。
 - 每次重要功能、结构、命令或运行方式变化后，同步更新 `AGENT.md` 和 `README.md`。
 - 临时截图、日志和调试文件只能放入明确的临时目录，验证完成后清理。
+- 未经明确要求不推送远端；提交前先检查 `git status` 和 `git diff`。
