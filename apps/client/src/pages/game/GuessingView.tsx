@@ -1,8 +1,8 @@
 import type { Anime, Player } from "@drawandguess/game-core";
 import { Check, Filter, Search, Star, Users, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { AnimeCard } from "../../components/AnimeCard";
-import { roomActions } from "../../store/roomStore";
+import { roomActions, useRoomStore } from "../../store/roomStore";
 
 function searchable(anime: Anime): string {
   return [anime.name, ...anime.aliases, ...anime.tags, ...anime.characters].join(" ").toLowerCase();
@@ -42,6 +42,39 @@ export function GuessingView({
   };
 
   const fromPlayer = fromPlayerId && players ? players.find((p) => p.id === fromPlayerId) : null;
+
+  const roundEndsAt = useRoomStore((state) => state.view?.roundEndsAt);
+  const phase = useRoomStore((state) => state.view?.phase);
+
+  const latestSubmit = useRef(submit);
+  const latestSelectedId = useRef(selectedId);
+  const latestCandidates = useRef(candidates);
+
+  useEffect(() => {
+    latestSubmit.current = submit;
+    latestSelectedId.current = selectedId;
+    latestCandidates.current = candidates;
+  });
+
+  useEffect(() => {
+    if (!roundEndsAt || phase !== "GUESS") return;
+    const checkTime = () => {
+      const remaining = roundEndsAt - Date.now();
+      if (remaining <= 0) {
+        clearInterval(timerId);
+        if (latestSelectedId.current) {
+          latestSubmit.current();
+        } else if (latestCandidates.current.length > 0) {
+          const fallbackId = latestCandidates.current[0].id;
+          setSelectedId(fallbackId);
+          setBusy(true);
+          roomActions.submitGuess(fallbackId).finally(() => setBusy(false));
+        }
+      }
+    };
+    const timerId = setInterval(checkTime, 200);
+    return () => clearInterval(timerId);
+  }, [roundEndsAt, phase]);
 
   return (
     <div className="guess-view">

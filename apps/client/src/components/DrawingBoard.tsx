@@ -1,6 +1,6 @@
 import { Check, Eraser, Paintbrush, Palette, Undo, Redo } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { socket } from "../store/roomStore";
+import { socket, useRoomStore } from "../store/roomStore";
 
 type Point = { x: number; y: number };
 type Stroke = { mode: "draw" | "erase"; color: string; size: number; points: Point[] };
@@ -205,6 +205,27 @@ export function DrawingBoard({ onSubmit }: { onSubmit: (drawing: string, strokes
       setSubmitting(false);
     }
   };
+
+  const roundEndsAt = useRoomStore((state) => state.view?.roundEndsAt);
+  const phase = useRoomStore((state) => state.view?.phase);
+  const submitRef = useRef<() => Promise<void>>(undefined);
+
+  useEffect(() => {
+    submitRef.current = submit;
+  });
+
+  useEffect(() => {
+    if (!roundEndsAt || phase !== "DRAW") return;
+    const checkTime = () => {
+      const remaining = roundEndsAt - Date.now();
+      if (remaining <= 0) {
+        clearInterval(timerId);
+        submitRef.current?.();
+      }
+    };
+    const timerId = setInterval(checkTime, 200);
+    return () => clearInterval(timerId);
+  }, [roundEndsAt, phase]);
 
   return (
     <section className="drawing-station panel">

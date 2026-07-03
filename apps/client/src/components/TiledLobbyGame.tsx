@@ -12,6 +12,8 @@ import { loadTiledLobbyMap, type TiledMapRenderer } from "./lobby/tiledMap";
 type PlayerPosition = {
   x: number;
   y: number;
+  targetX?: number;
+  targetY?: number;
   isLeft: boolean;
   animState: string;
   actionStartedAt: number;
@@ -37,6 +39,7 @@ const PLAYER_MOVE_SPEED = 2;
 const ATTACK_DURATION_MS = 400;
 const ATTACK_COOLDOWN_MS = 500;
 const KNOCKBACK_DURATION_MS = 480;
+const POSITION_SYNC_INTERVAL_MS = 120; // 调整后的公网位置同步刷新率 (120ms)
 let runtimePromise: Promise<LobbyRuntime> | null = null;
 
 function loadImage(source: string) {
@@ -144,15 +147,18 @@ export function TiledLobbyGame({
       if (data.playerId === view.selfId || !isLobbyWalkablePoint(data.x, data.y)) return;
       const existing = positionsRef.current[data.playerId];
       if (existing?.knockback) {
-        // 击退由本地逐帧插值驱动；忽略被击玩家每 50ms 回传的位置，避免观察端出现分段瞬移。
+        // 击退由本地逐帧插值驱动；忽略被击玩家回传的位置，避免观察端出现分段瞬移。
         existing.isLeft = data.isLeft;
         return;
       }
       const now = performance.now();
       const attackStarted = data.animState === "attack" && existing?.animState !== "attack";
+      const shouldSnap = !existing || Math.hypot(existing.x - data.x, existing.y - data.y) > 150;
       positionsRef.current[data.playerId] = {
-        x: data.x,
-        y: data.y,
+        x: shouldSnap ? data.x : existing.x,
+        y: shouldSnap ? data.y : existing.y,
+        targetX: data.x,
+        targetY: data.y,
         isLeft: data.isLeft,
         animState: data.animState,
         actionStartedAt: attackStarted ? now : existing?.actionStartedAt ?? 0,
@@ -254,6 +260,11 @@ export function TiledLobbyGame({
     let frameId = 0;
     const tick = (time: number) => {
       updatePlayerPosition(positionsRef.current[view.selfId], keysRef.current, interactionDisabled, time);
+      for (const playerId of Object.keys(positionsRef.current)) {
+        if (playerId !== view.selfId) {
+          updateOtherPlayerPosition(positionsRef.current[playerId], time);
+        }
+      }
       sendPlayerPosition(positionsRef.current[view.selfId], lastSentRef.current);
       drawLobby(
         waterCanvasRef.current,
@@ -361,6 +372,33 @@ function updatePlayerPosition(
   position.animState = "idle";
 }
 
+function updateOtherPlayerPosition(
+  position: PlayerPosition | undefined,
+  time: number,
+) {
+  if (!position) return;
+  if (position.knockback) {
+    const motion = position.knockback;
+    const progress = Math.min(1, (time - motion.startedAt) / motion.duration);
+    const eased = progress * progress * (3 - 2 * progress);
+    position.x = motion.fromX + (motion.toX - motion.fromX) * eased;
+    position.y = motion.fromY + (motion.toY - motion.fromY) * eased;
+    if (progress >= 1) position.knockback = undefined;
+    return;
+  }
+  if (position.targetX !== undefined && position.targetY !== undefined) {
+    const dx = position.targetX - position.x;
+    const dy = position.targetY - position.y;
+    if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+      position.x = position.targetX;
+      position.y = position.targetY;
+    } else {
+      position.x += dx * 0.15;
+      position.y += dy * 0.15;
+    }
+  }
+}
+
 function startWarriorAttack(
   position: PlayerPosition | undefined,
   keys: Record<string, boolean>,
@@ -388,7 +426,7 @@ function sendPlayerPosition(
   const now = performance.now();
   const moved = !Number.isFinite(lastSent.x) || Math.hypot(position.x - lastSent.x, position.y - lastSent.y) >= 2;
   const stateChanged = lastSent.animState !== position.animState;
-  if (!force && !stateChanged && (!moved || now - lastSent.at < 50)) return;
+  if (!force && !stateChanged && (!moved || now - lastSent.at < POSITION_SYNC_INTERVAL_MS)) return;
   socket.emit("player:move", {
     x: position.x,
     y: position.y,

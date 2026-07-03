@@ -23,7 +23,7 @@ if (isProduction) {
   const distPath = join(__dirname, "..", "..", "client", "dist");
 
   if (existsSync(distPath)) {
-    app.use(express.static(distPath));
+    app.use(express.static(distPath, { maxAge: "1d" }));
     // SPA fallback: serve index.html for non-API routes
     // Express 5 uses regex or path-to-regexp syntax, not "*"
     app.get(/^(?!\/socket\.io|\/health).*/, (_req, res) => {
@@ -39,6 +39,8 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: { origin: true, credentials: true },
   maxHttpBufferSize: 3_000_000,
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
 const identities = new Map<string, RoomIdentity>();

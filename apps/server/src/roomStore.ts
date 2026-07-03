@@ -44,6 +44,7 @@ export type RoomIdentity = { code: string; playerId: string; token: string };
 
 const REVEAL_ITEM_DURATION_MS = 3000;
 const WARRIOR_ATTACK_COOLDOWN_MS = 500;
+const VOTE_DURATION_SECONDS = 30; // 投票倒计时时长 (30秒)
 const WARRIOR_ATTACK_RANGE = 96;
 const WARRIOR_ATTACK_HALF_HEIGHT = 36;
 const WARRIOR_KNOCKBACK_DISTANCE = 72;
@@ -337,9 +338,13 @@ export class RoomStore {
     if (room.phase !== "VOTE") throw new Error("当前不能投票");
     const chain = room.chains.find((entry) => entry.id === chainId);
     if (!chain) throw new Error("传递链不存在");
+    if (chain.votes[playerId]) throw new Error("您已为该链投过票");
     chain.votes[playerId] = choice;
+
+    const currentChainFinished = Object.keys(chain.votes).length === room.players.length;
     const expected = room.players.length * room.chains.length;
     const actual = room.chains.reduce((sum, entry) => sum + Object.keys(entry.votes).length, 0);
+
     if (actual === expected) {
       room.chains.forEach((entry) => {
         const values = Object.values(entry.votes);
@@ -347,6 +352,14 @@ export class RoomStore {
         entry.outcome = success > values.length / 2 ? "success" : "failure";
       });
       room.phase = "RESULTS";
+      room.roundEndsAt = null;
+      if (room.roundTimer) {
+        clearTimeout(room.roundTimer);
+        room.roundTimer = null;
+      }
+    } else if (currentChainFinished) {
+      // 当前这一条链已经投满，但还有未投满的链，重置并为下一条链开启投票计时！
+      this.startVoteTimer(room);
     }
     this.onChange(room.code);
   }
@@ -444,6 +457,48 @@ export class RoomStore {
       return;
     }
     room.phase = "VOTE";
+    this.startVoteTimer(room);
+  }
+
+  private startVoteTimer(room: Room): void {
+    if (room.roundTimer) {
+      clearTimeout(room.roundTimer);
+      room.roundTimer = null;
+    }
+
+    room.roundEndsAt = Date.now() + VOTE_DURATION_SECONDS * 1000;
+
+    room.roundTimer = setTimeout(() => {
+      // 投票超时自动补票
+      const activeChain = room.chains.find(
+        (chain) => Object.keys(chain.votes).length < room.players.length
+      );
+      if (!activeChain) return;
+
+      room.players.forEach((p) => {
+        if (!activeChain.votes[p.id]) {
+          activeChain.votes[p.id] = "success";
+        }
+      });
+
+      const expected = room.players.length * room.chains.length;
+      const actual = room.chains.reduce((sum, entry) => sum + Object.keys(entry.votes).length, 0);
+
+      if (actual === expected) {
+        room.chains.forEach((entry) => {
+          const values = Object.values(entry.votes);
+          const success = values.filter((value) => value === "success").length;
+          entry.outcome = success > values.length / 2 ? "success" : "failure";
+        });
+        room.phase = "RESULTS";
+        room.roundEndsAt = null;
+        room.roundTimer = null;
+      } else {
+        // 继续开启下一条链的计时
+        this.startVoteTimer(room);
+      }
+      this.onChange(room.code);
+    }, VOTE_DURATION_SECONDS * 1000);
   }
 
   private startRound(room: Room, phase: "DRAW" | "GUESS"): void {

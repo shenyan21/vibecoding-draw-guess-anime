@@ -107,7 +107,7 @@ export function GameFrame({
 
   const copyRoomCode = () => navigator.clipboard?.writeText(view.code);
 
-  const showCountdown = view.roundEndsAt && (view.phase === "DRAW" || view.phase === "GUESS");
+  const showCountdown = view.roundEndsAt && (view.phase === "DRAW" || view.phase === "GUESS" || view.phase === "VOTE");
 
   return (
     <main className={`game-frame ${view.phase === "LOBBY" ? "game-frame--lobby" : ""} ${scrollingLobby ? "game-frame--scrolling-lobby" : ""}`}>
@@ -152,7 +152,7 @@ export function GameFrame({
       {showCountdown && (
         <CountdownBar
           roundEndsAt={view.roundEndsAt!}
-          duration={view.phase === "DRAW" ? view.drawDuration : view.guessDuration}
+          duration={view.phase === "DRAW" ? view.drawDuration : view.phase === "GUESS" ? view.guessDuration : 30}
         />
       )}
 
